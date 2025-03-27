@@ -74,13 +74,6 @@
                 </div>
 
                 <div class="bg-white bg-opacity-10 p-4 rounded-xl">
-                  <label for="intervalRange" class="block text-sm font-medium text-white mb-2">Max Interval</label>
-                  <select v-model="intervalRange" id="intervalRange" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-0 focus:outline-none focus:ring-2 focus:ring-purple-300 sm:text-sm rounded-md shadow-sm text-gray-700 font-medium">
-                    <option v-for="(range, key) in INTERVAL_RANGE_MAP" :key="key" :value="key">{{ range.name }}</option>
-                  </select>
-                </div>
-
-                <div class="bg-white bg-opacity-10 p-4 rounded-xl">
                   <label for="numNotes" class="block text-sm font-medium text-white mb-2">Notes per Phrase</label>
                   <input type="number" v-model.number="numNotes" id="numNotes" min="2" max="7" class="mt-1 focus:ring-purple-300 focus:border-purple-300 block w-full shadow-sm sm:text-sm border-0 rounded-md py-2 px-3 text-gray-700 font-medium">
                 </div>
@@ -215,7 +208,6 @@ const key = ref('C');
 const majorMinor = ref('major');
 const speed = ref(1);
 const startFromRoot = ref(true);
-const intervalRange = ref('5');
 const numNotes = ref(3);
 const notes = ref([]);
 const playing = ref(false);
@@ -224,6 +216,7 @@ const showAnswers = ref(false);
 const noteDetails = ref([]);
 const showAdvanced = ref(false);
 const isPlayingClickedNote = ref(false);
+const previousNotes = ref([]); // Add this to store the previous sequence
 
 let audioContext = null;
 
@@ -231,7 +224,6 @@ let audioContext = null;
 const currentClefRange = computed(() => CLEF_RANGES[clef.value]);
 const currentKeyData = computed(() => KEYS[key.value]);
 const currentScaleIntervals = computed(() => currentKeyData.value[majorMinor.value]);
-const maxIntervalSemitones = computed(() => INTERVAL_RANGE_MAP[intervalRange.value].maxSemitones);
 const noteDuration = computed(() => Math.max(0.1, speed.value * 0.8));
 const rootMidi = computed(() => getRootMidiInClef(key.value, currentClefRange.value));
 
@@ -313,79 +305,116 @@ const generateNotes = () => {
 
   const { defaultMin: minMidi, defaultMax: maxMidi } = currentClefRange.value;
   const scale = currentScaleIntervals.value;
-  const maxSemi = maxIntervalSemitones.value;
   const rootMidiNote = rootMidi.value;
 
-  const generated = [];
+  let generated = [];
   let attempts = 0;
   const maxAttemptsPerNote = 150;
-
-  let firstNote = null;
-  if (startFromRoot.value) {
-    firstNote = rootMidiNote;
-    if (firstNote < minMidi || firstNote > maxMidi) {
-      console.warn(`Root note ${MIDI_NOTE_NAMES[rootMidiNote % 12]} (${firstNote}) is outside default clef range [${minMidi}-${maxMidi}]. Trying to adjust.`);
-      if (firstNote < minMidi && rootMidiNote + 12 <= maxMidi) firstNote += 12;
-      else if (firstNote > maxMidi && rootMidiNote - 12 >= minMidi) firstNote -= 12;
+  let overallAttempts = 0;
+  const maxOverallAttempts = 50;
+  
+  // Keep generating new sequences until we get one that's different from the previous
+  while (overallAttempts < maxOverallAttempts) {
+    overallAttempts++;
+    generated = []; // Clear the array for a new attempt
+    
+    let firstNote = null;
+    if (startFromRoot.value) {
+      firstNote = rootMidiNote;
       if (firstNote < minMidi || firstNote > maxMidi) {
-        generationError.value = `Cannot place root note ${key.value} within the selected clef range [${minMidi}-${maxMidi}]. Try different settings.`;
+        console.warn(`Root note ${MIDI_NOTE_NAMES[rootMidiNote % 12]} (${firstNote}) is outside default clef range [${minMidi}-${maxMidi}]. Trying to adjust.`);
+        if (firstNote < minMidi && rootMidiNote + 12 <= maxMidi) firstNote += 12;
+        else if (firstNote > maxMidi && rootMidiNote - 12 >= minMidi) firstNote -= 12;
+        if (firstNote < minMidi || firstNote > maxMidi) {
+          generationError.value = `Cannot place root note ${key.value} within the selected clef range [${minMidi}-${maxMidi}]. Try different settings.`;
+          notes.value = [];
+          noteDetails.value = [];
+          return;
+        }
+        console.warn(`Adjusted root note to ${firstNote}`);
+      }
+    } else {
+      attempts = 0;
+      while (firstNote === null && attempts < maxAttemptsPerNote * 2) {
+        const randomNote = getRandomInt(minMidi, maxMidi);
+        if (isNoteInScale(randomNote, rootMidiNote, scale)) {
+          firstNote = randomNote;
+        }
+        attempts++;
+      }
+      if (firstNote === null) {
+        generationError.value = "Could not find a random starting note in the scale within the selected range. Try adjusting range or key.";
         notes.value = [];
         noteDetails.value = [];
         return;
       }
-      console.warn(`Adjusted root note to ${firstNote}`);
     }
-  } else {
-    attempts = 0;
-    while (firstNote === null && attempts < maxAttemptsPerNote * 2) {
-      const randomNote = getRandomInt(minMidi, maxMidi);
-      if (isNoteInScale(randomNote, rootMidiNote, scale)) {
-        firstNote = randomNote;
+    generated.push(firstNote);
+
+    let lastNote = firstNote;
+    let generationSuccessful = true;
+    
+    for (let i = 1; i < numNotes.value; i++) {
+      let nextNote = null;
+      attempts = 0;
+      while (nextNote === null && attempts < maxAttemptsPerNote) {
+        attempts++;
+        let semitoneDiff = getRandomInt(1, 12);
+        if (semitoneDiff === 0) semitoneDiff = 1;
+
+        if (Math.random() < 0.5) {
+          semitoneDiff *= -1;
+        }
+        const potentialNote = lastNote + semitoneDiff;
+
+        if (potentialNote >= minMidi &&
+            potentialNote <= maxMidi &&
+            isNoteInScale(potentialNote, rootMidiNote, scale))
+        {
+          nextNote = potentialNote;
+        }
       }
-      attempts++;
+      if (nextNote === null) {
+        generationError.value = `Could not generate note ${i+1} after ${attempts} attempts. Try different settings.`;
+        generationSuccessful = false;
+        break;
+      }
+      generated.push(nextNote);
+      lastNote = nextNote;
     }
-    if (firstNote === null) {
-      generationError.value = "Could not find a random starting note in the scale within the selected range. Try adjusting range or key.";
+    
+    if (!generationSuccessful) {
       notes.value = [];
       noteDetails.value = [];
       return;
     }
-  }
-  generated.push(firstNote);
-
-  let lastNote = firstNote;
-  for (let i = 1; i < numNotes.value; i++) {
-    let nextNote = null;
-    attempts = 0;
-    while (nextNote === null && attempts < maxAttemptsPerNote) {
-      attempts++;
-      let semitoneDiff = getRandomInt(1, maxSemi);
-      if (semitoneDiff === 0) semitoneDiff = 1;
-
-      if (Math.random() < 0.5) {
-        semitoneDiff *= -1;
-      }
-
-      const potentialNote = lastNote + semitoneDiff;
-
-      if (potentialNote >= minMidi &&
-          potentialNote <= maxMidi &&
-          isNoteInScale(potentialNote, rootMidiNote, scale))
-      {
-        nextNote = potentialNote;
+    
+    // Check if the generated sequence is different from the previous one
+    if (previousNotes.value.length !== generated.length) {
+      break; // Different length, so definitely different sequence
+    }
+    
+    let isDifferent = false;
+    for (let i = 0; i < generated.length; i++) {
+      if (generated[i] !== previousNotes.value[i]) {
+        isDifferent = true;
+        break;
       }
     }
-    if (nextNote === null) {
-      generationError.value = `Could not generate note ${i + 1} with the current settings (too restrictive?). Try increasing interval range or clef range. Notes generated so far: ${generated.join(', ')}`;
-      notes.value = generated;
-      calculateNoteDetails();
-      return;
+    
+    if (isDifferent || previousNotes.value.length === 0) {
+      break; // Found a different sequence or this is the first sequence
     }
-    generated.push(nextNote);
-    lastNote = nextNote;
+    
+    // If we've reached the max attempts and still haven't found a different sequence
+    if (overallAttempts >= maxOverallAttempts) {
+      // Just use what we have as a last resort
+      break;
+    }
   }
-
-  console.log("Generated MIDI Notes:", generated);
+  
+  // Store the current sequence as the previous one for next time
+  previousNotes.value = [...generated];
   notes.value = generated;
   calculateNoteDetails();
 };
