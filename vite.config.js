@@ -5,6 +5,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/ear-training-app/',
   plugins: [
     vue(),
     vueDevTools(),
