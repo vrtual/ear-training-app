@@ -1,10 +1,9 @@
-import { fileURLToPath, URL } from 'node:url'
-
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
+import vueDevTools from '@vuejs/vite-plugin-vue-devtools'
+import { fileURLToPath, URL } from 'node:url'
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
   base: '/ear-training-app/',
   plugins: [
@@ -14,6 +13,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
+    },
+  },
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+        output: {
+            entryFileNames: `[name]-[hash].js`,
+        },
     },
   },
 })
