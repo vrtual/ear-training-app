@@ -73,6 +73,16 @@
                   <label for="startFromRoot" class="ml-3 block text-sm text-white font-medium">Start from Root note</label>
                 </div>
 
+                <div class="bg-white bg-opacity-10 p-4 rounded-xl flex items-center">
+                  <input v-model="notesAboveRoot" id="notesAboveRoot" type="checkbox" class="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                  <label for="notesAboveRoot" class="ml-3 block text-sm text-white font-medium">Notes above root note</label>
+                </div>
+
+                <div class="bg-white bg-opacity-10 p-4 rounded-xl flex items-center">
+                  <input v-model="oneOctaveLimit" id="oneOctaveLimit" type="checkbox" class="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                  <label for="oneOctaveLimit" class="ml-3 block text-sm text-white font-medium">One octave limit</label>
+                </div>
+
                 <div class="bg-white bg-opacity-10 p-4 rounded-xl">
                   <label for="numNotes" class="block text-sm font-medium text-white mb-2">Notes per Phrase</label>
                   <input type="number" v-model.number="numNotes" id="numNotes" min="2" max="7" class="mt-1 focus:ring-purple-300 focus:border-purple-300 block w-full shadow-sm sm:text-sm border-0 rounded-md py-2 px-3 text-gray-700 font-medium">
@@ -88,28 +98,37 @@
             <button
               @click="generateNotes"
               :disabled="playing"
-              class="w-full sm:w-auto inline-flex justify-center items-center px-8 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+              class="w-full sm:w-40 h-14 inline-flex justify-center items-center px-8 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 relative overflow-hidden"
             >
-              <i class="mdi mdi-refresh mr-2 text-xl"></i>
-              New Notes
+              <span class="absolute inset-0 flex items-center justify-center text-white opacity-20 text-7xl font-bold">1</span>
+              <span class="relative z-10 flex items-center">
+                <i class="mdi mdi-refresh mr-2 text-xl"></i>
+                New Notes
+              </span>
             </button>
 
             <button
               @click="playNotes"
               :disabled="playing || notes.length === 0"
-              class="w-full sm:w-auto inline-flex justify-center items-center px-8 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+              class="w-full sm:w-40 h-14 inline-flex justify-center items-center px-8 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 relative overflow-hidden"
             >
-              <i class="mdi mdi-play mr-2 text-xl"></i>
-              Play
+              <span class="absolute inset-0 flex items-center justify-center text-white opacity-20 text-7xl font-bold">2</span>
+              <span class="relative z-10 flex items-center">
+                <i class="mdi mdi-play mr-2 text-xl"></i>
+                Play
+              </span>
             </button>
             
             <button
               v-if="notes.length > 0 && !showAnswers"
               @click="revealAnswers"
-              class="w-full sm:w-auto inline-flex justify-center items-center px-8 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all transform hover:scale-105"
+              class="w-full sm:w-40 h-14 inline-flex justify-center items-center px-8 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all transform hover:scale-105 relative overflow-hidden"
             >
-              <i class="mdi mdi-eye mr-2 text-xl"></i>
-              Reveal Answer
+              <span class="absolute inset-0 flex items-center justify-center text-white opacity-20 text-7xl font-bold">3</span>
+              <span class="relative z-10 flex items-center">
+                <i class="mdi mdi-eye mr-2 text-xl"></i>
+                Reveal Answer
+              </span>
             </button>
           </div>
 
@@ -149,7 +168,7 @@
       
       <!-- Footer -->
       <div class="mt-8 text-center text-indigo-500 text-sm">
-        <p> {{ new Date().getFullYear() }} Ear Training App</p>
+        <p> &copy; {{ new Date().getFullYear() }} Ear Training App, vrtualnz.</p>
       </div>
     </div>
   </div>
@@ -162,23 +181,32 @@ import '@mdi/font/css/materialdesignicons.css';
 // Constants
 const MIDI_NOTE_NAMES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
 const CLEF_RANGES = {
-  bass: { defaultMin: 36, defaultMax: 60, name: 'Bass (C2-C4)' },
-  treble: { defaultMin: 57, defaultMax: 81, name: 'Treble (A3-A5)' }
+  bass: { defaultMin: 36, defaultMax: 72, name: 'Bass (C2-C5)' },
+  treble: { defaultMin: 57, defaultMax: 93, name: 'Treble (A3-A6)' }
 };
+
+// Define standard scale patterns (semitone intervals from the root)
+const SCALE_PATTERNS = {
+  major: [0, 2, 4, 5, 7, 9, 11],
+  minor: [0, 2, 3, 5, 7, 8, 10],
+  chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+};
+
 const KEYS = {
-  C: { name: 'C', major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
-  Db: { name: 'Db', major: [1, 3, 5, 6, 8, 10, 0], minor: [1, 3, 4, 6, 8, 9, 11], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
-  D: { name: 'D', major: [2, 4, 6, 7, 9, 11, 1], minor: [2, 4, 5, 7, 9, 10, 0], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
-  Eb: { name: 'Eb', major: [3, 5, 7, 8, 10, 0, 2], minor: [3, 5, 6, 8, 10, 11, 1], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
-  E: { name: 'E', major: [4, 6, 8, 9, 11, 1, 3], minor: [4, 6, 7, 9, 11, 0, 2], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
-  F: { name: 'F', major: [5, 7, 9, 10, 0, 2, 4], minor: [5, 7, 8, 10, 0, 1, 3], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
-  Gb: { name: 'Gb', major: [6, 8, 10, 11, 1, 3, 5], minor: [6, 8, 9, 11, 1, 2, 4], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
-  G: { name: 'G', major: [7, 9, 11, 0, 2, 4, 6], minor: [7, 9, 10, 0, 2, 3, 5], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
-  Ab: { name: 'Ab', major: [8, 10, 0, 1, 3, 5, 7], minor: [8, 10, 11, 1, 3, 4, 6], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
-  A: { name: 'A', major: [9, 11, 1, 2, 4, 6, 8], minor: [9, 11, 0, 2, 4, 5, 7], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
-  Bb: { name: 'Bb', major: [10, 0, 2, 3, 5, 7, 9], minor: [10, 0, 1, 3, 5, 6, 8], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
-  B: { name: 'B', major: [11, 1, 3, 4, 6, 8, 10], minor: [11, 1, 2, 4, 6, 7, 9], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] }
+  C: { name: 'C', rootIndex: 0 },
+  Db: { name: 'Db', rootIndex: 1 },
+  D: { name: 'D', rootIndex: 2 },
+  Eb: { name: 'Eb', rootIndex: 3 },
+  E: { name: 'E', rootIndex: 4 },
+  F: { name: 'F', rootIndex: 5 },
+  Gb: { name: 'Gb', rootIndex: 6 },
+  G: { name: 'G', rootIndex: 7 },
+  Ab: { name: 'Ab', rootIndex: 8 },
+  A: { name: 'A', rootIndex: 9 },
+  Bb: { name: 'Bb', rootIndex: 10 },
+  B: { name: 'B', rootIndex: 11 }
 };
+
 const INTERVAL_RANGE_MAP = {
   '5': { maxSemitones: 7, name: '2nd to 5th' },
   '8': { maxSemitones: 12, name: 'Octave' },
@@ -217,13 +245,14 @@ const noteDetails = ref([]);
 const showAdvanced = ref(false);
 const isPlayingClickedNote = ref(false);
 const previousNotes = ref([]); // Add this to store the previous sequence
+const notesAboveRoot = ref(true); // New ref for notes above root note setting
+const oneOctaveLimit = ref(true); // New ref for one octave limit setting
 
 let audioContext = null;
 
 // Computed Properties
 const currentClefRange = computed(() => CLEF_RANGES[clef.value]);
 const currentKeyData = computed(() => KEYS[key.value]);
-const currentScaleIntervals = computed(() => currentKeyData.value[majorMinor.value]);
 const noteDuration = computed(() => Math.max(0.1, speed.value * 0.8));
 const rootMidi = computed(() => getRootMidiInClef(key.value, currentClefRange.value));
 
@@ -252,29 +281,43 @@ function getRandomInt(min, max) {
 function getRootMidiInClef(keyName, clefInfo) {
   const keyRootOffset = MIDI_NOTE_NAMES.indexOf(keyName);
   if (keyRootOffset === -1) return 60;
-  let octave = 4;
-  let rootMidi = keyRootOffset + 12 * octave;
-
-  while (rootMidi < clefInfo.defaultMin - 6) {
-    rootMidi += 12;
+  
+  // Set a consistent octave based on the clef
+  let targetOctave;
+  if (clef.value === 'bass') {
+    targetOctave = 3; // Use octave 3 (middle range) for bass clef
+  } else {
+    targetOctave = 4; // Use octave 4 for treble clef
   }
-  while (rootMidi > clefInfo.defaultMax + 6) {
-    rootMidi -= 12;
+  
+  // Calculate the MIDI note for the root in the target octave
+  let rootMidi = keyRootOffset + 12 * targetOctave;
+  
+  // Make sure the root note is within a reasonable range
+  const minAllowed = clefInfo.defaultMin;
+  const maxAllowed = clefInfo.defaultMax - 12; // Ensure at least an octave above root is available
+  
+  // Adjust octave if needed, but try to stay close to the target octave
+  if (rootMidi < minAllowed) {
+    rootMidi += 12; // Go up an octave
+  } else if (rootMidi > maxAllowed) {
+    rootMidi -= 12; // Go down an octave
   }
-  rootMidi = Math.max(21, Math.min(rootMidi, 108));
-
+  
   return rootMidi;
 }
 
-function isNoteInScale(midiNote, rootMidi, scaleIntervals) {
+function isNoteInScale(midiNote, rootMidi, scaleType) {
   if (midiNote === null || rootMidi === null) return false;
   
   // If using chromatic scale, all notes are valid
-  if (majorMinor.value === 'chromatic') return true;
+  if (scaleType === 'chromatic') return true;
   
-  const intervalFromRoot = (midiNote - rootMidi);
-  const normalizedInterval = ((intervalFromRoot % 12) + 12) % 12;
-  return scaleIntervals.includes(normalizedInterval);
+  // Calculate the semitone interval from the root
+  const intervalFromRoot = ((midiNote - rootMidi) % 12 + 12) % 12;
+  
+  // Check if this interval is in the scale pattern
+  return SCALE_PATTERNS[scaleType].includes(intervalFromRoot);
 }
 
 function getNoteName(midiNote) {
@@ -304,8 +347,10 @@ const generateNotes = () => {
   }
 
   const { defaultMin: minMidi, defaultMax: maxMidi } = currentClefRange.value;
-  const scale = currentScaleIntervals.value;
   const rootMidiNote = rootMidi.value;
+  
+  // Ensure we have at least an octave above the root note available
+  const effectiveMaxMidi = Math.max(maxMidi, rootMidiNote + 12);
 
   let generated = [];
   let attempts = 0;
@@ -321,12 +366,12 @@ const generateNotes = () => {
     let firstNote = null;
     if (startFromRoot.value) {
       firstNote = rootMidiNote;
-      if (firstNote < minMidi || firstNote > maxMidi) {
-        console.warn(`Root note ${MIDI_NOTE_NAMES[rootMidiNote % 12]} (${firstNote}) is outside default clef range [${minMidi}-${maxMidi}]. Trying to adjust.`);
-        if (firstNote < minMidi && rootMidiNote + 12 <= maxMidi) firstNote += 12;
-        else if (firstNote > maxMidi && rootMidiNote - 12 >= minMidi) firstNote -= 12;
-        if (firstNote < minMidi || firstNote > maxMidi) {
-          generationError.value = `Cannot place root note ${key.value} within the selected clef range [${minMidi}-${maxMidi}]. Try different settings.`;
+      if (firstNote < minMidi || firstNote > effectiveMaxMidi) {
+        console.warn(`Root note ${MIDI_NOTE_NAMES[rootMidiNote % 12]} (${firstNote}) is outside default clef range [${minMidi}-${effectiveMaxMidi}]. Trying to adjust.`);
+        if (firstNote < minMidi && rootMidiNote + 12 <= effectiveMaxMidi) firstNote += 12;
+        else if (firstNote > effectiveMaxMidi && rootMidiNote - 12 >= minMidi) firstNote -= 12;
+        if (firstNote < minMidi || firstNote > effectiveMaxMidi) {
+          generationError.value = `Cannot place root note ${key.value} within the selected clef range [${minMidi}-${effectiveMaxMidi}]. Try different settings.`;
           notes.value = [];
           noteDetails.value = [];
           return;
@@ -336,8 +381,8 @@ const generateNotes = () => {
     } else {
       attempts = 0;
       while (firstNote === null && attempts < maxAttemptsPerNote * 2) {
-        const randomNote = getRandomInt(minMidi, maxMidi);
-        if (isNoteInScale(randomNote, rootMidiNote, scale)) {
+        const randomNote = getRandomInt(minMidi, effectiveMaxMidi);
+        if (isNoteInScale(randomNote, rootMidiNote, majorMinor.value)) {
           firstNote = randomNote;
         }
         attempts++;
@@ -367,9 +412,17 @@ const generateNotes = () => {
         }
         const potentialNote = lastNote + semitoneDiff;
 
+        // Check if the note is above the root note when notesAboveRoot is enabled
+        const isAboveRootCheck = !notesAboveRoot.value || potentialNote >= rootMidiNote;
+        
+        // Check if the note is within one octave of the root when oneOctaveLimit is enabled
+        const isWithinOctaveCheck = !oneOctaveLimit.value || (potentialNote <= rootMidiNote + 12);
+
         if (potentialNote >= minMidi &&
-            potentialNote <= maxMidi &&
-            isNoteInScale(potentialNote, rootMidiNote, scale))
+            potentialNote <= effectiveMaxMidi &&
+            isNoteInScale(potentialNote, rootMidiNote, majorMinor.value) &&
+            isAboveRootCheck &&
+            isWithinOctaveCheck)
         {
           nextNote = potentialNote;
         }
@@ -499,11 +552,9 @@ const playNotes = async () => {
 
   const waitDuration = Math.max(0, lastNoteEndTime - currentAudioTime);
 
-  console.log(`Playing ${notes.value.length} notes. Waiting for ${waitDuration.toFixed(3)} seconds.`);
   await new Promise(resolve => setTimeout(resolve, waitDuration * 1000));
 
   playing.value = false;
-  console.log("Finished playing notes.");
 };
 
 const playNoteOnce = (midiNote) => {
