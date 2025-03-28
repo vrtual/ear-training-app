@@ -145,6 +145,7 @@
           <div v-if="showAnswers && noteDetails.length > 0" class="mt-8 bg-gradient-to-br from-indigo-50 to-purple-50 p-8 rounded-xl border border-indigo-100 shadow-lg">
             <h3 class="text-xl font-bold text-indigo-900 mb-6 flex items-center">
               <i class="mdi mdi-music-note-plus mr-3 text-2xl text-indigo-600"></i> Note Details
+              <span class="ml-3 text-sm text-indigo-500 italic font-normal">tap to hear</span>
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div 
