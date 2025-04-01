@@ -510,8 +510,8 @@ const playNote = (midiNote, startTime, duration) => {
   const actualDuration = Math.max(0.05, duration - releaseTime);
 
   gainNode.gain.setValueAtTime(0, startTime);
-  gainNode.gain.linearRampToValueAtTime(0.7, startTime + attackTime);
-  gainNode.gain.setValueAtTime(0.7, startTime + actualDuration);
+  gainNode.gain.linearRampToValueAtTime(0.9, startTime + attackTime);
+  gainNode.gain.setValueAtTime(0.9, startTime + actualDuration);
   gainNode.gain.linearRampToValueAtTime(0, startTime + actualDuration + releaseTime);
 
   osc.start(startTime);
